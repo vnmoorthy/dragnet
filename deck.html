@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Dragnet — Pitch Deck</title>
+<style>
+  :root{
+    --bg:#0b0f14; --panel:#111823; --line:#1e2a38; --text:#e8eef5; --muted:#7f93a8;
+    --accent:#35c2ff; --ring:#ff3b57; --mule:#ffd23b; --green:#3bd67a;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    background:radial-gradient(1200px 700px at 70% -10%, #12202e 0%, var(--bg) 55%);
+    color:var(--text);font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+    overflow:hidden;
+  }
+  .deck{height:100vh;width:100vw;position:relative}
+  .slide{
+    position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;
+    padding:min(9vw,110px);opacity:0;pointer-events:none;transform:translateY(14px);
+    transition:opacity .45s ease, transform .45s ease;
+  }
+  .slide.active{opacity:1;pointer-events:auto;transform:none}
+  .kicker{color:var(--accent);letter-spacing:3px;text-transform:uppercase;font-size:clamp(11px,1.3vw,14px);font-weight:700;margin-bottom:18px}
+  h1{font-size:clamp(34px,6vw,76px);line-height:1.02;font-weight:800;letter-spacing:-1px}
+  h2{font-size:clamp(26px,4.4vw,52px);line-height:1.05;font-weight:800;letter-spacing:-.5px;margin-bottom:22px}
+  .lead{font-size:clamp(16px,2.1vw,24px);color:#cdd9e6;line-height:1.5;max-width:900px;margin-top:22px}
+  .brand{display:flex;align-items:center;gap:14px;margin-bottom:26px}
+  .brand .logo{font-size:clamp(30px,4vw,46px)}
+  .brand .name{font-weight:800;letter-spacing:6px;font-size:clamp(20px,2.6vw,30px)}
+  .accent{color:var(--accent)} .rc{color:var(--ring)} .mc{color:var(--mule)}
+  /* flow */
+  .flow{display:flex;flex-wrap:wrap;gap:10px;margin-top:30px;align-items:center}
+  .step{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 16px;font-weight:600;font-size:clamp(12px,1.5vw,16px)}
+  .arrow{color:var(--muted);font-size:20px}
+  /* stack */
+  .stack{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:40px;max-width:1050px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:18px}
+  .card .t{font-weight:800;font-size:clamp(14px,1.7vw,18px);margin-bottom:6px}
+  .card .d{color:var(--muted);font-size:clamp(11px,1.3vw,13px);line-height:1.4}
+  .card.n{border-color:#2b5a74}.card.r{border-color:#5a3a1e}.card.b{border-color:#244b39}.card.c{border-color:#3a2b5a}
+  /* stats */
+  .stats{display:flex;gap:18px;flex-wrap:wrap;margin-top:34px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px 26px;min-width:160px}
+  .stat .big{font-size:clamp(28px,4vw,44px);font-weight:800}
+  .stat .lbl{color:var(--muted);font-size:clamp(11px,1.3vw,13px);margin-top:4px}
+  .links{display:flex;gap:14px;flex-wrap:wrap;margin-top:40px}
+  .btn{display:inline-flex;align-items:center;gap:8px;text-decoration:none;font-weight:700;padding:14px 22px;border-radius:12px;font-size:clamp(13px,1.6vw,16px)}
+  .btn.primary{background:var(--accent);color:#04121a}
+  .btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
+  .why{display:flex;gap:26px;flex-wrap:wrap;margin-top:30px;color:#cdd9e6;font-size:clamp(13px,1.6vw,17px)}
+  .why div{display:flex;gap:9px;align-items:flex-start}.why .ck{color:var(--green);font-weight:800}
+  /* chrome */
+  .foot{position:absolute;left:0;right:0;bottom:26px;display:flex;justify-content:space-between;align-items:center;padding:0 min(9vw,110px);color:var(--muted);font-size:12px}
+  .dots{display:flex;gap:9px}
+  .dot{width:9px;height:9px;border-radius:50%;background:#2a3a4a;border:none;cursor:pointer;transition:background .2s}
+  .dot.on{background:var(--accent)}
+  .nav{position:absolute;top:50%;transform:translateY(-50%);border:none;background:rgba(255,255,255,.05);color:var(--text);width:46px;height:46px;border-radius:50%;cursor:pointer;font-size:20px;z-index:5}
+  .nav:hover{background:rgba(255,255,255,.12)} .nav.prev{left:22px}.nav.next{right:22px}
+  @media(max-width:720px){.stack{grid-template-columns:repeat(2,1fr)}.nav{display:none}}
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+
+  <!-- SLIDE 1 — HOOK -->
+  <section class="slide active">
+    <div class="brand"><span class="logo">🕸️</span><span class="name">DRAGNET</span></div>
+    <div class="kicker">Real-time fraud-ring intelligence · HackwithBay 3.0</div>
+    <h1>Every transaction looks clean.<br><span class="rc">The ring doesn't.</span></h1>
+    <p class="lead">Money mules split laundering into dozens of small transfers that slip under every
+      per-transaction rule. The crime is invisible in the rows — it only appears in the
+      <span class="accent">relationships between accounts</span>. Rules engines never see it.</p>
+  </section>
+
+  <!-- SLIDE 2 — SOLUTION + STACK -->
+  <section class="slide">
+    <div class="kicker">How Dragnet works</div>
+    <h2>We make the hidden ring <span class="rc">light up</span> — live.</h2>
+    <p class="lead">Model accounts, devices, IPs and transfers as a graph, then <b>traverse the relationships</b>
+      to surface the cluster and pinpoint the mule — a pattern a SQL <code>JOIN</code> can't express.</p>
+    <div class="flow">
+      <span class="step">Graph the money</span><span class="arrow">→</span>
+      <span class="step">Traverse shared identities</span><span class="arrow">→</span>
+      <span class="step rc" style="color:var(--ring)">Ring + mule surface</span><span class="arrow">→</span>
+      <span class="step">Score &amp; narrate</span><span class="arrow">→</span>
+      <span class="step">Freeze &amp; file</span>
+    </div>
+    <div class="stack">
+      <div class="card n"><div class="t accent">Neo4j</div><div class="d">Graph-native detection — shared-identity traversal + volume centrality find the ring &amp; the mule.</div></div>
+      <div class="card r"><div class="t mc">RocketRide Cloud</div><div class="d">Deployed AI pipeline: score → typology → investigator briefing.</div></div>
+      <div class="card b"><div class="t" style="color:var(--green)">Butterbase</div><div class="d">Auth, case database, and Stripe-Connect payment to unlock the freeze.</div></div>
+      <div class="card c"><div class="t" style="color:#b79bff">Cognee</div><div class="d">Remembers confirmed typologies across sessions — the agent gets smarter.</div></div>
+    </div>
+  </section>
+
+  <!-- SLIDE 3 — IMPACT + DEMO -->
+  <section class="slide">
+    <div class="kicker">Caught live in 90 seconds</div>
+    <h2>Invisible per-transaction. <span class="accent">Obvious as a graph.</span></h2>
+    <div class="stats">
+      <div class="stat"><div class="big rc">9</div><div class="lbl">account ring, surfaced instantly</div></div>
+      <div class="stat"><div class="big">$94,896</div><div class="lbl">funneled into one mule</div></div>
+      <div class="stat"><div class="big mc">99</div><div class="lbl">risk — flagged &amp; explained</div></div>
+    </div>
+    <div class="why">
+      <div><span class="ck">✓</span> All three mandatory sponsors load-bearing — remove one and it breaks</div>
+      <div><span class="ck">✓</span> Graph detection SQL can't do</div>
+      <div><span class="ck">✓</span> Explainable &amp; investigator-ready</div>
+    </div>
+    <div class="links">
+      <a class="btn primary" href="https://vnmoorthy.github.io/dragnet/" target="_blank" rel="noopener">▶ Try the live demo</a>
+      <a class="btn ghost" href="https://github.com/vnmoorthy/dragnet" target="_blank" rel="noopener">◧ View the code</a>
+    </div>
+  </section>
+
+  <button class="nav prev" id="prev" aria-label="Previous">‹</button>
+  <button class="nav next" id="next" aria-label="Next">›</button>
+  <div class="foot">
+    <span>Dragnet · HackwithBay 3.0</span>
+    <div class="dots" id="dots"></div>
+    <span id="counter">1 / 3</span>
+  </div>
+</div>
+
+<script>
+  const slides=[...document.querySelectorAll('.slide')];
+  const dotsWrap=document.getElementById('dots');
+  const counter=document.getElementById('counter');
+  let i=0;
+  slides.forEach((_,k)=>{const b=document.createElement('button');b.className='dot'+(k===0?' on':'');b.onclick=()=>go(k);dotsWrap.appendChild(b);});
+  const dots=[...dotsWrap.children];
+  function go(n){
+    i=(n+slides.length)%slides.length;
+    slides.forEach((s,k)=>s.classList.toggle('active',k===i));
+    dots.forEach((d,k)=>d.classList.toggle('on',k===i));
+    counter.textContent=(i+1)+' / '+slides.length;
+  }
+  document.getElementById('next').onclick=()=>go(i+1);
+  document.getElementById('prev').onclick=()=>go(i-1);
+  document.addEventListener('keydown',e=>{
+    if(e.key==='ArrowRight'||e.key===' ')go(i+1);
+    if(e.key==='ArrowLeft')go(i-1);
+  });
+</script>
+</body>
+</html>
