@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.env
+web/dist/
+src/data/demo-graph.json
+src/data/cognee-memory.json
+*.log
+.DS_Store

@@ -1,0 +1,55 @@
+{
+  "name": "dragnet-investigator",
+  "version": "1.0.0",
+  "_readme": "Multi-agent fraud investigation pipeline. Open this in the RocketRide VS Code extension, wire the nodes on the canvas, run it locally, then one-click deploy to cloud.rocketride.ai. The app calls the deployed endpoint from src/lib/rocketride.ts. This JSON is the reference structure — adjust node `type`/`provider` names to match your installed RocketRide node palette.",
+  "input": {
+    "schema": {
+      "ringId": "string",
+      "accounts": "array",
+      "mule": "string",
+      "totalAmount": "number",
+      "sharedDevices": "number",
+      "txCount": "number"
+    }
+  },
+  "nodes": [
+    {
+      "id": "score",
+      "type": "code",
+      "_role": "AGENT 1 — Risk Scorer. Deterministic 0-100 risk from graph features.",
+      "language": "python",
+      "code": "fresh = len([a for a in input['accounts'] if a['openedDaysAgo'] <= 30])\nscore = min(99, 40 + input['sharedDevices']*8 + fresh*4 + min(20, input['txCount']))\nreturn { 'riskScore': score, 'fresh': fresh }"
+    },
+    {
+      "id": "typology",
+      "type": "llm",
+      "_role": "AGENT 2 — Typology Classifier. Names the money-laundering pattern.",
+      "provider": "anthropic",
+      "model": "claude-sonnet-5",
+      "system": "You are an AML analyst. Given a fraud-ring feature summary, output ONLY the single best-fit typology label (e.g. 'structuring / smurfing', 'money mule network', 'layering').",
+      "prompt": "Ring of {{input.accounts.length}} accounts, {{input.sharedDevices}} shared device/IP fingerprints, {{input.txCount}} internal transfers totaling ${{input.totalAmount}} into one mule. {{score.fresh}} accounts opened in the last 30 days. Typology:"
+    },
+    {
+      "id": "narrate",
+      "type": "llm",
+      "_role": "AGENT 3 — Investigator Briefing. Plain-English narrative + action.",
+      "provider": "openai",
+      "model": "gpt-4o",
+      "system": "You are a senior fraud investigator writing a concise case briefing for an analyst. 2-3 sentences. End with a recommended action.",
+      "prompt": "Typology: {{typology.output}}. Risk score: {{score.riskScore}}. Ring: {{input.accounts.length}} accounts funneling ${{input.totalAmount}} into mule {{input.mule}}, sharing {{input.sharedDevices}} device fingerprints. Write the briefing."
+    },
+    {
+      "id": "output",
+      "type": "code",
+      "language": "python",
+      "code": "return { 'riskScore': score['riskScore'], 'typology': typology['output'], 'narrative': narrate['output'], 'recommendedAction': 'Freeze feeders + mule; file SAR; escalate to Tier-2.' }"
+    }
+  ],
+  "edges": [
+    { "from": "input", "to": "score" },
+    { "from": "score", "to": "typology" },
+    { "from": "typology", "to": "narrate" },
+    { "from": "narrate", "to": "output" }
+  ],
+  "output": { "node": "output" }
+}
