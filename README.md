@@ -2,6 +2,8 @@
 
 **HackwithBay 3.0 · Track 2 (Fraud & Anomaly Ring Detector)**
 
+**🔗 Live demo:** https://vnmoorthy.github.io/dragnet/ — runs the full graph-detection flow client-side on sample data (no backend needed). Repo: https://github.com/vnmoorthy/dragnet
+
 A stream of bank transactions that each look perfectly clean in isolation. Dragnet
 runs **Neo4j graph community detection** to make an invisible laundering ring
 snap into view, has a **deployed RocketRide Cloud pipeline** score and narrate it,
