@@ -95,8 +95,15 @@ export const getStatus = (): Promise<Status> =>
 export const getInitialGraph = (): Promise<GraphData> => {
   if (!STATIC) return fetch('/api/graph/initial').then(j);
   const nodes = snap.accounts.map((a) => ({ id: a.id, name: a.name, type: 'account', community: -1, betweenness: 0, flagged: a.flagged }));
-  const links = snap.tx.slice(0, 260).map((t) => ({ source: t.src, target: t.dst, kind: 'money', amount: t.amount }));
-  return Promise.resolve({ nodes, links });
+  const money = snap.tx.slice(0, 260).map((t) => ({ source: t.src, target: t.dst, kind: 'money', amount: t.amount }));
+  // Bake the ring's shared-identity + funnel edges into the layout up front so the
+  // cluster forms once (stably). On detect we only recolor — never reheat the sim.
+  const ringSet = new Set(snap.ring);
+  const ringMoney = snap.tx
+    .filter((t) => ringSet.has(t.src) && ringSet.has(t.dst))
+    .map((t) => ({ source: t.src, target: t.dst, kind: 'money', amount: t.amount }));
+  const shared = sharedEdges([...ringSet]).edges;
+  return Promise.resolve({ nodes, links: [...money, ...ringMoney, ...shared] });
 };
 
 export const detect = (): Promise<DetectResult> => (STATIC ? Promise.resolve(staticDetect()) : liveDetect());

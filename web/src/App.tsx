@@ -37,11 +37,15 @@ export default function App() {
 
   async function runDetect() {
     setDetecting(true);
-    const r = await detect();
-    // add ring's hidden shared-device + funnel edges without resetting the layout
-    setGraph((g) => ({ nodes: g.nodes, links: [...g.links, ...r.ring.links] }));
-    setResult(r);
-    setDetecting(false);
+    try {
+      // min ~1.1s so the graph traversal reads as real work on screen.
+      // NOTE: we do NOT mutate graph data here — the ring edges are already in the
+      // layout, so detection just recolors + focuses (no simulation reheat).
+      const [r] = await Promise.all([detect(), new Promise((res) => setTimeout(res, 1100))]);
+      setResult(r);
+    } finally {
+      setDetecting(false);
+    }
   }
 
   async function onFreeze() {
@@ -76,9 +80,20 @@ export default function App() {
       <div className="stage">
         <div className="canvas">
           <Graph data={graph} ringIds={ringIds} muleId={result?.ring.mule ?? null} detected={!!result} />
-          {!result && (
+          {!result && !detecting && (
             <div className="hint">
               {graph.nodes.length} accounts · every transaction looks clean in isolation
+            </div>
+          )}
+          {detecting && (
+            <div className="scanning">
+              <span className="spin">⚙</span> Traversing the graph — linking accounts by shared device &amp; IP…
+            </div>
+          )}
+          {result && (
+            <div className="detected-banner">
+              ⚠ FRAUD RING DETECTED · {result.ring.nodes.length} accounts · mule&nbsp;
+              <b>{result.ring.nodes.find((n) => n.isMule)?.name ?? result.ring.mule}</b>
             </div>
           )}
         </div>
@@ -91,7 +106,7 @@ export default function App() {
 
           {!result ? (
             <button className="primary" disabled={detecting || !graph.nodes.length} onClick={runDetect}>
-              {detecting ? 'Running Louvain + betweenness…' : '⚡ Run ring detection'}
+              {detecting ? '⚙ Traversing graph…' : '⚡ Run ring detection'}
             </button>
           ) : (
             <section className="briefing">
