@@ -15,6 +15,9 @@ export type Verdict = { riskScore: number; typology: string; narrative: string; 
 export type DetectResult = { ring: Ring; verdict: Verdict; memory: string | null };
 export type Status = { neo4j: boolean; rocketride: boolean; butterbase: boolean; cognee: boolean; mode: string };
 
+// Detection choreography clock — one source of truth driving every behind-the-scenes panel.
+export type Phase = 'idle' | 'scanning' | 'traversing' | 'revealing' | 'complete';
+
 // STATIC mode (VITE_STATIC=1) runs the whole demo client-side off the bundled
 // snapshot — no backend — so it can be hosted on GitHub Pages as a live sample.
 const STATIC = import.meta.env.VITE_STATIC === '1';

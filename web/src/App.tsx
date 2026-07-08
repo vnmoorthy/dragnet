@@ -1,8 +1,11 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Graph from './Graph';
+import TelemetryConsole from './TelemetryConsole';
+import PipelineTracker from './PipelineTracker';
+import QuerySteps from './QuerySteps';
 import {
   detect, getInitialGraph, getStatus, streamTransactions, freeze, checkout,
-  type GraphData, type DetectResult, type Status,
+  type GraphData, type DetectResult, type Status, type Phase,
 } from './api';
 
 const USER = 'investigator-demo';
@@ -11,11 +14,14 @@ export default function App() {
   const [status, setStatus] = useState<Status | null>(null);
   const [graph, setGraph] = useState<GraphData>({ nodes: [], links: [] });
   const [result, setResult] = useState<DetectResult | null>(null);
-  const [detecting, setDetecting] = useState(false);
+  const [phase, setPhase] = useState<Phase>('idle');
   const [feed, setFeed] = useState<string[]>([]);
   const [paywall, setPaywall] = useState(false);
   const [frozen, setFrozen] = useState<number | null>(null);
   const [paying, setPaying] = useState(false);
+  const timers = useRef<number[]>([]);
+
+  const busy = phase === 'scanning' || phase === 'traversing' || phase === 'revealing';
 
   const nameMap = useMemo(() => {
     const m = new Map<string, string>();
@@ -33,19 +39,25 @@ export default function App() {
     });
   }, [graph.nodes.length, nameMap]);
 
+  useEffect(() => () => timers.current.forEach(clearTimeout), []);
+
   const ringIds = useMemo(() => new Set(result?.ring.nodes.map((n) => n.id) ?? []), [result]);
 
   async function runDetect() {
-    setDetecting(true);
-    try {
-      // min ~1.1s so the graph traversal reads as real work on screen.
-      // NOTE: we do NOT mutate graph data here — the ring edges are already in the
-      // layout, so detection just recolors + focuses (no simulation reheat).
-      const [r] = await Promise.all([detect(), new Promise((res) => setTimeout(res, 1100))]);
-      setResult(r);
-    } finally {
-      setDetecting(false);
-    }
+    if (busy) return;
+    const r = await detect(); // resolve first so the ring is ready by the reveal beat
+    const at = (ms: number, fn: () => void) => timers.current.push(window.setTimeout(fn, ms));
+    setPhase('scanning');
+    at(800, () => setPhase('traversing'));
+    at(1500, () => { setResult(r); setPhase('revealing'); }); // graph lights up + camera moves
+    at(2200, () => setPhase('complete'));                     // briefing fades in
+  }
+
+  function resetDemo() {
+    timers.current.forEach(clearTimeout);
+    timers.current = [];
+    setResult(null); setFrozen(null); setPaywall(false); setPaying(false);
+    setPhase('idle');
   }
 
   async function onFreeze() {
@@ -58,42 +70,43 @@ export default function App() {
   async function onPay() {
     if (!result) return;
     setPaying(true);
-    await checkout(USER);                       // Butterbase Stripe Connect checkout
-    const res = await freeze(USER, result.ring, result.verdict); // retry, now Pro
+    await checkout(USER);
+    const res = await freeze(USER, result.ring, result.verdict);
     setPaying(false);
     setPaywall(false);
     if (res.status !== 402) setFrozen(res.body.frozen);
   }
 
+  const muleName = result?.ring.nodes.find((n) => n.isMule)?.name ?? result?.ring.mule;
+  const busyLabel = phase === 'scanning' ? '⚙ Scanning graph…' : phase === 'traversing' ? '⚙ Linking shared identities…' : '⚙ Pinpointing mule…';
+
   return (
     <div className="app">
       <header className="topbar">
         <div className="brand"><span className="logo">🕸️</span> DRAGNET <span className="tag">real-time fraud-ring intelligence</span></div>
-        <div className="chips">
-          <Chip on={status?.neo4j} label="Neo4j" demoLabel="Neo4j (demo)" />
-          <Chip on={status?.rocketride} label="RocketRide" demoLabel="RocketRide (demo)" />
-          <Chip on={status?.butterbase} label="Butterbase" demoLabel="Butterbase (demo)" />
-          <Chip on={status?.cognee} label="Cognee" demoLabel="Cognee (local)" />
+        <div className="topbar-right">
+          <div className="chips">
+            <Chip on={status?.neo4j} label="Neo4j" demoLabel="Neo4j" />
+            <Chip on={status?.rocketride} label="RocketRide" demoLabel="RocketRide" />
+            <Chip on={status?.butterbase} label="Butterbase" demoLabel="Butterbase" />
+            <Chip on={status?.cognee} label="Cognee" demoLabel="Cognee" />
+          </div>
+          {phase !== 'idle' && <button className="reset" onClick={resetDemo}>↺ Reset</button>}
         </div>
       </header>
 
       <div className="stage">
         <div className="canvas">
-          <Graph data={graph} ringIds={ringIds} muleId={result?.ring.mule ?? null} detected={!!result} />
-          {!result && !detecting && (
-            <div className="hint">
-              {graph.nodes.length} accounts · every transaction looks clean in isolation
-            </div>
+          <Graph data={graph} ringIds={ringIds} muleId={result?.ring.mule ?? null} phase={phase} />
+          {phase === 'idle' && (
+            <div className="hint">{graph.nodes.length} accounts · every transaction looks clean in isolation</div>
           )}
-          {detecting && (
-            <div className="scanning">
-              <span className="spin">⚙</span> Traversing the graph — linking accounts by shared device &amp; IP…
-            </div>
+          {(phase === 'scanning' || phase === 'traversing') && (
+            <div className="scanning"><span className="spin">⚙</span> {phase === 'scanning' ? 'Scanning transaction graph…' : 'Traversing shared-identity links…'}</div>
           )}
-          {result && (
+          {(phase === 'revealing' || phase === 'complete') && result && (
             <div className="detected-banner">
-              ⚠ FRAUD RING DETECTED · {result.ring.nodes.length} accounts · mule&nbsp;
-              <b>{result.ring.nodes.find((n) => n.isMule)?.name ?? result.ring.mule}</b>
+              ⚠ FRAUD RING DETECTED · {result.ring.nodes.length} accounts · mule&nbsp;<b>{muleName}</b>
             </div>
           )}
         </div>
@@ -104,19 +117,18 @@ export default function App() {
             <ul>{feed.map((l, i) => <li key={i} style={{ opacity: 1 - i * 0.12 }}>{l}</li>)}</ul>
           </section>
 
-          {!result ? (
-            <button className="primary" disabled={detecting || !graph.nodes.length} onClick={runDetect}>
-              {detecting ? '⚙ Traversing graph…' : '⚡ Run ring detection'}
+          {phase !== 'complete' ? (
+            <button className="primary" disabled={busy || !graph.nodes.length} onClick={runDetect}>
+              {busy ? busyLabel : '⚡ Run ring detection'}
             </button>
-          ) : (
+          ) : result && (
             <section className="briefing">
               <div className="scorewrap">
                 <RiskDial score={result.verdict.riskScore} />
                 <div>
                   <div className="typology">{result.verdict.typology}</div>
                   <div className="ringmeta">
-                    {result.ring.nodes.length} accounts · ${result.ring.totalAmount.toLocaleString()} ·
-                    {' '}{result.ring.sharedDevices} shared fingerprints
+                    {result.ring.nodes.length} accounts · ${result.ring.totalAmount.toLocaleString()} · {result.ring.sharedDevices} shared fingerprints
                   </div>
                 </div>
               </div>
@@ -137,6 +149,12 @@ export default function App() {
             </section>
           )}
         </aside>
+      </div>
+
+      <div className="console">
+        <TelemetryConsole phase={phase} />
+        <QuerySteps phase={phase} />
+        <PipelineTracker phase={phase} result={result} />
       </div>
 
       {paywall && (
@@ -161,15 +179,19 @@ export default function App() {
   );
 }
 
-function Chip({ on, label, demoLabel }: { on?: boolean; label: string; demoLabel: string }) {
-  return <span className={`chip ${on ? 'live' : 'demo'}`}>{on ? '● ' + label : '○ ' + demoLabel}</span>;
+function Chip({ on, label }: { on?: boolean; label: string; demoLabel?: string }) {
+  return <span className={`chip ${on ? 'live' : 'demo'}`}>{on ? '● ' : '○ '}{label}</span>;
 }
 
 function RiskDial({ score }: { score: number }) {
   const color = score >= 80 ? '#ff3b57' : score >= 50 ? '#ffb03b' : '#3bd67a';
+  const tier = score >= 80 ? 'CRITICAL' : score >= 50 ? 'HIGH' : 'MEDIUM';
   return (
-    <div className="dial" style={{ borderColor: color, color }}>
-      <span className="num">{score}</span><span className="lbl">RISK</span>
+    <div className="dialwrap">
+      <div className="dial" style={{ borderColor: color, color }}>
+        <span className="num">{score}</span><span className="lbl">RISK</span>
+      </div>
+      <span className="tier" style={{ color }}>{tier}</span>
     </div>
   );
 }
