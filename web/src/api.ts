@@ -11,8 +11,17 @@ export type Ring = {
   sharedDevices: number;
   internalTx: number;
 };
-export type Verdict = { riskScore: number; typology: string; narrative: string; recommendedAction: string };
-export type DetectResult = { ring: Ring; verdict: Verdict; memory: string | null };
+export type RiskFactor = { label: string; weight: number; severity: 'low' | 'medium' | 'high' };
+export type Breakdown = { devices: number; recency: number; volume: number };
+export type MemoryInfo = {
+  hit: boolean; matchScore: number; storedTypologies: number; previousCases: number;
+  recent: { caseId: string; typology: string; confidence: number }[];
+};
+export type Verdict = {
+  riskScore: number; typology: string; narrative: string; recommendedAction: string;
+  breakdown: Breakdown; riskFactors: RiskFactor[];
+};
+export type DetectResult = { ring: Ring; verdict: Verdict; memory: MemoryInfo };
 export type Status = { neo4j: boolean; rocketride: boolean; butterbase: boolean; cognee: boolean; mode: string };
 
 // Detection choreography clock — one source of truth driving every behind-the-scenes panel.
@@ -80,15 +89,37 @@ function staticDetect(): DetectResult {
     internalTx: internal.length,
   };
   const fresh = ring.nodes.filter((n) => n.openedDaysAgo <= 30).length;
-  const risk = Math.min(99, 40 + ring.sharedDevices * 8 + fresh * 4 + Math.min(20, ring.internalTx));
+  const devPts = ring.sharedDevices * 8;
+  const recPts = fresh * 4;
+  const volPts = Math.min(20, ring.internalTx);
+  const risk = Math.min(99, 40 + devPts + recPts + volPts);
   const muleName = ring.nodes.find((n) => n.id === mule)?.name ?? mule;
   const verdict: Verdict = {
     riskScore: risk,
     typology: 'structuring / smurfing',
     narrative: `Detected a ${ring.nodes.length}-account cluster funneling $${ring.totalAmount.toLocaleString()} into a single mule (${muleName}). ${ring.nodes.length - 1} feeder accounts share ${ring.sharedDevices} device/IP fingerprint(s) and were opened within the last 30 days — a classic structuring ring engineered to stay under individual reporting thresholds.`,
     recommendedAction: 'Freeze all feeder accounts and the mule; file SAR; escalate to Tier-2.',
+    breakdown: {
+      devices: Math.min(100, Math.round((devPts / 32) * 100)),
+      recency: Math.min(100, Math.round((recPts / 32) * 100)),
+      volume: Math.min(100, Math.round((volPts / 20) * 100)),
+    },
+    riskFactors: [
+      { label: 'Funnel-to-single-mule topology', weight: 40, severity: 'high' },
+      { label: `${ring.sharedDevices} shared device/IP fingerprints`, weight: devPts, severity: 'high' },
+      { label: `${fresh} accounts opened <30 days`, weight: recPts, severity: 'medium' },
+      { label: 'High internal transfer volume', weight: volPts, severity: 'high' },
+    ],
   };
-  return { ring, verdict, memory: null };
+  const memory: MemoryInfo = {
+    hit: true, matchScore: 89, storedTypologies: 12, previousCases: 3,
+    recent: [
+      { caseId: 'CASE-4729', typology: 'structuring / smurfing', confidence: 94 },
+      { caseId: 'CASE-4501', typology: 'money mule network', confidence: 81 },
+      { caseId: 'CASE-4388', typology: 'layering', confidence: 76 },
+    ],
+  };
+  return { ring, verdict, memory };
 }
 
 // ------------------------------------------------------------------- public API

@@ -3,9 +3,12 @@ import Graph from './Graph';
 import TelemetryConsole from './TelemetryConsole';
 import PipelineTracker from './PipelineTracker';
 import QuerySteps from './QuerySteps';
+import RiskFactors from './RiskFactors';
+import CogneeMemory from './CogneeMemory';
+import { useCounter } from './useCounter';
 import {
   detect, getInitialGraph, getStatus, streamTransactions, freeze, checkout,
-  type GraphData, type DetectResult, type Status, type Phase,
+  type GraphData, type DetectResult, type Status, type Phase, type Breakdown,
 } from './api';
 
 const USER = 'investigator-demo';
@@ -124,20 +127,20 @@ export default function App() {
           ) : result && (
             <section className="briefing">
               <div className="scorewrap">
-                <RiskDial score={result.verdict.riskScore} />
+                <RiskDial score={result.verdict.riskScore} breakdown={result.verdict.breakdown} />
                 <div>
                   <div className="typology">{result.verdict.typology}</div>
                   <div className="ringmeta">
-                    {result.ring.nodes.length} accounts · ${result.ring.totalAmount.toLocaleString()} · {result.ring.sharedDevices} shared fingerprints
+                    <AnimatedMetric value={result.ring.nodes.length} /> accounts · $<AnimatedMetric value={result.ring.totalAmount} /> · <AnimatedMetric value={result.ring.sharedDevices} /> shared fingerprints
                   </div>
                 </div>
               </div>
 
+              <RiskFactors factors={result.verdict.riskFactors} />
+
               <p className="narrative">{result.verdict.narrative}</p>
 
-              <div className="memory">
-                🧠 {result.memory ? <><b>Memory hit:</b> {result.memory}</> : <>New typology — will be remembered after you confirm.</>}
-              </div>
+              <CogneeMemory memory={result.memory} />
 
               <div className="action">{result.verdict.recommendedAction}</div>
 
@@ -183,15 +186,35 @@ function Chip({ on, label }: { on?: boolean; label: string; demoLabel?: string }
   return <span className={`chip ${on ? 'live' : 'demo'}`}>{on ? '● ' : '○ '}{label}</span>;
 }
 
-function RiskDial({ score }: { score: number }) {
+function AnimatedMetric({ value }: { value: number }) {
+  const n = useCounter(value, 700);
+  return <>{Math.round(n).toLocaleString()}</>;
+}
+
+function RiskDial({ score, breakdown }: { score: number; breakdown: Breakdown }) {
+  const n = Math.round(useCounter(score, 700));
   const color = score >= 80 ? '#ff3b57' : score >= 50 ? '#ffb03b' : '#3bd67a';
   const tier = score >= 80 ? 'CRITICAL' : score >= 50 ? 'HIGH' : 'MEDIUM';
   return (
     <div className="dialwrap">
-      <div className="dial" style={{ borderColor: color, color }}>
-        <span className="num">{score}</span><span className="lbl">RISK</span>
+      <div className={`dial ${score >= 80 ? 'crit' : ''}`} style={{ borderColor: color, color }}>
+        <span className="num">{n}</span><span className="lbl">RISK</span>
       </div>
       <span className="tier" style={{ color }}>{tier}</span>
+      <div className="factbars">
+        <FactBar label="DEV" v={breakdown.devices} c="#ff3b57" />
+        <FactBar label="AGE" v={breakdown.recency} c="#ffb03b" />
+        <FactBar label="VOL" v={breakdown.volume} c="#3bd67a" />
+      </div>
+    </div>
+  );
+}
+
+function FactBar({ label, v, c }: { label: string; v: number; c: string }) {
+  return (
+    <div className="factbar">
+      <span className="fb-label">{label}</span>
+      <span className="fb-track"><span className="fb-fill" style={{ width: `${v}%`, background: c }} /></span>
     </div>
   );
 }
