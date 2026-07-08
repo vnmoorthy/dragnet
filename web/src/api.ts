@@ -1,4 +1,5 @@
-export type GNode = { id: string; name: string; type: string; community: number; betweenness: number; flagged: boolean };
+export type GNode = { id: string; name: string; type: string; community: number; betweenness: number; flagged: boolean; balance: number };
+export type NodeDetail = { id: string; name: string; balance: number; openedDaysAgo: number; flagged: boolean; devices: string[]; ips: string[]; inRing: boolean; isMule: boolean };
 export type GLink = { source: string; target: string; kind: string; amount?: number };
 export type GraphData = { nodes: GNode[]; links: GLink[] };
 
@@ -128,7 +129,7 @@ export const getStatus = (): Promise<Status> =>
 
 export const getInitialGraph = (): Promise<GraphData> => {
   if (!STATIC) return fetch('/api/graph/initial').then(j);
-  const nodes = snap.accounts.map((a) => ({ id: a.id, name: a.name, type: 'account', community: -1, betweenness: 0, flagged: a.flagged }));
+  const nodes = snap.accounts.map((a) => ({ id: a.id, name: a.name, type: 'account', community: -1, betweenness: 0, flagged: a.flagged, balance: a.balance }));
   const money = snap.tx.slice(0, 260).map((t) => ({ source: t.src, target: t.dst, kind: 'money', amount: t.amount }));
   // Bake the ring's shared-identity + funnel edges into the layout up front so the
   // cluster forms once (stably). On detect we only recolor — never reheat the sim.
@@ -139,6 +140,15 @@ export const getInitialGraph = (): Promise<GraphData> => {
   const shared = sharedEdges([...ringSet]).edges;
   return Promise.resolve({ nodes, links: [...money, ...ringMoney, ...shared] });
 };
+
+// Click-to-inspect: real per-account intelligence from the bundled snapshot.
+export function getNodeDetail(id: string): NodeDetail | null {
+  const a = snap.accounts.find((x) => x.id === id);
+  if (!a) return null;
+  const devices = snap.links.filter((l) => l.account === id && l.kind === 'device').map((l) => l.target);
+  const ips = snap.links.filter((l) => l.account === id && l.kind === 'ip').map((l) => l.target);
+  return { id, name: a.name, balance: a.balance, openedDaysAgo: a.openedDaysAgo, flagged: a.flagged, devices, ips, inRing: snap.ring.includes(id), isMule: snap.mule === id };
+}
 
 export const detect = (): Promise<DetectResult> => (STATIC ? Promise.resolve(staticDetect()) : liveDetect());
 

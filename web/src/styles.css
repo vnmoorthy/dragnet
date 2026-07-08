@@ -208,3 +208,50 @@ button:disabled { opacity: 0.5; cursor: default; }
 .cog-typ { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cog-conf { color: #9fd0ff; }
 .cog-miss { color: var(--muted); font-style: italic; margin-top: 6px; font-size: var(--t-sm); }
+
+/* ============ Round 3 — demo flow ============ */
+.telemetry-bar { display: flex; border-bottom: 1px solid var(--line); background: #0c1119; }
+.telemetry-bar .stat { padding: 8px 22px; border-right: 1px solid var(--line); display: flex; flex-direction: column; gap: 1px; }
+.stat-v { font-size: var(--t-lg); font-weight: 800; color: var(--accent); font-variant-numeric: tabular-nums; }
+.stat-l { font-size: 9px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted-2); }
+
+.empty-briefing { display: flex; flex-direction: column; gap: 12px; animation: fade 0.5s ease; }
+.eb-badge { font-size: 10px; letter-spacing: 2px; color: var(--green); }
+.eb-title { font-size: var(--t-xl); font-weight: 800; line-height: 1.15; margin: 0; background: linear-gradient(120deg, #fff, #9fd0ff); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.eb-body { font-size: var(--t-sm); line-height: 1.6; color: #cdd9e6; margin: 0; }
+.eb-body b { color: #fff; } .eb-accent { color: var(--accent); }
+.eb-points { list-style: none; padding: 0; margin: 4px 0; font-size: var(--t-sm); color: #aebfd0; display: flex; flex-direction: column; gap: 7px; }
+.eb-points li { display: flex; align-items: center; gap: 9px; }
+.eb-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.eb-dot.n { background: var(--accent); } .eb-dot.r { background: var(--amber); } .eb-dot.c { background: #b79bff; }
+.empty-briefing .primary { margin-top: 6px; }
+
+.feed-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 8px; }
+.feed-head h3 { margin: 0; }
+.ring-activity { font-size: 10px; color: var(--ring); font-weight: 700; }
+.feed li { display: flex; justify-content: space-between; gap: 8px; align-items: center; }
+.feed-line { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.feed-ts { font-size: 9px; color: var(--muted-2); flex-shrink: 0; }
+.feed li.ring-tx { background: rgba(255,59,87,0.10); color: #ff8ba0; border-radius: 4px; padding: 3px 6px; margin-left: -6px; }
+.feed li.ring-tx .feed-ts { color: #ff8ba0; }
+
+.drawer-bg { position: fixed; inset: 0; z-index: 40; }
+.drawer { position: fixed; top: 0; right: 0; height: 100vh; width: 340px; background: linear-gradient(160deg, #121b27, #0d1420); border-left: 1px solid var(--line); box-shadow: -20px 0 40px rgba(0,0,0,0.4); padding: 20px; overflow-y: auto; animation: slideInRight 0.3s cubic-bezier(.2,.9,.2,1); }
+@keyframes slideInRight { from { transform: translateX(30px); opacity: 0; } to { transform: none; opacity: 1; } }
+.dr-head { display: flex; justify-content: space-between; align-items: flex-start; }
+.dr-name { font-size: var(--t-lg); font-weight: 800; }
+.dr-id { font-family: var(--mono); font-size: var(--t-xs); color: var(--muted); margin-top: 2px; }
+.dr-close { background: transparent; color: var(--muted); font-size: 16px; }
+.dr-close:hover { color: #fff; }
+.dr-flag { margin: 14px 0; padding: 8px 12px; border-radius: 8px; font-size: var(--t-sm); font-weight: 700; }
+.dr-flag.mule { background: rgba(255,210,59,0.12); border: 1px solid #4a3f10; color: var(--mule); }
+.dr-flag.ring { background: rgba(255,59,87,0.10); border: 1px solid #4a1622; color: #ff8ba0; }
+.dr-flag.ok { background: rgba(59,214,122,0.08); border: 1px solid #244b39; color: var(--green); }
+.dr-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 14px 0; }
+.dr-cell { background: rgba(255,255,255,0.02); border: 1px solid var(--line); border-radius: 8px; padding: 9px 11px; display: flex; flex-direction: column; gap: 3px; }
+.dr-k { font-size: 9px; letter-spacing: 0.5px; text-transform: uppercase; color: var(--muted-2); }
+.dr-v { font-size: var(--t-base); font-weight: 700; }
+.dr-section { font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--muted); margin: 14px 0 7px; }
+.dr-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.dr-chip { font-family: var(--mono); font-size: var(--t-xs); background: rgba(53,194,255,0.08); border: 1px solid var(--line); color: #9fd0ff; padding: 3px 8px; border-radius: 6px; }
+.dr-note { margin-top: 16px; font-size: var(--t-xs); color: var(--muted); line-height: 1.5; border-top: 1px solid var(--line); padding-top: 12px; }

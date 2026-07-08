@@ -5,10 +5,13 @@ import PipelineTracker from './PipelineTracker';
 import QuerySteps from './QuerySteps';
 import RiskFactors from './RiskFactors';
 import CogneeMemory from './CogneeMemory';
+import TelemetryBar from './TelemetryBar';
+import EmptyBriefing from './EmptyBriefing';
+import NodeDrawer from './NodeDrawer';
 import { useCounter } from './useCounter';
 import {
-  detect, getInitialGraph, getStatus, streamTransactions, freeze, checkout,
-  type GraphData, type DetectResult, type Status, type Phase, type Breakdown,
+  detect, getInitialGraph, getStatus, streamTransactions, freeze, checkout, getNodeDetail,
+  type GraphData, type DetectResult, type Status, type Phase, type Breakdown, type NodeDetail,
 } from './api';
 
 const USER = 'investigator-demo';
@@ -18,10 +21,11 @@ export default function App() {
   const [graph, setGraph] = useState<GraphData>({ nodes: [], links: [] });
   const [result, setResult] = useState<DetectResult | null>(null);
   const [phase, setPhase] = useState<Phase>('idle');
-  const [feed, setFeed] = useState<string[]>([]);
+  const [feed, setFeed] = useState<{ line: string; ts: string; ring: boolean }[]>([]);
   const [paywall, setPaywall] = useState(false);
   const [frozen, setFrozen] = useState<number | null>(null);
   const [paying, setPaying] = useState(false);
+  const [selected, setSelected] = useState<NodeDetail | null>(null);
   const timers = useRef<number[]>([]);
 
   const busy = phase === 'scanning' || phase === 'traversing' || phase === 'revealing';
@@ -31,20 +35,23 @@ export default function App() {
     graph.nodes.forEach((n) => m.set(n.id, n.name));
     return m;
   }, [graph.nodes]);
+  const valueAtRisk = useMemo(() => graph.nodes.reduce((s, n) => s + (n.balance || 0), 0), [graph.nodes]);
 
   useEffect(() => { getStatus().then(setStatus); getInitialGraph().then(setGraph); }, []);
+
+  const ringIds = useMemo(() => new Set(result?.ring.nodes.map((n) => n.id) ?? []), [result]);
 
   useEffect(() => {
     if (!graph.nodes.length) return;
     return streamTransactions((tx) => {
+      const ring = ringIds.has(tx.src) && ringIds.has(tx.dst);
       const line = `${nameMap.get(tx.src) ?? tx.src}  →  ${nameMap.get(tx.dst) ?? tx.dst}   $${tx.amount}`;
-      setFeed((f) => [line, ...f].slice(0, 7));
+      const ts = new Date().toLocaleTimeString('en-US', { hour12: false });
+      setFeed((f) => [{ line, ts, ring }, ...f].slice(0, 8));
     });
-  }, [graph.nodes.length, nameMap]);
+  }, [graph.nodes.length, nameMap, ringIds]);
 
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
-
-  const ringIds = useMemo(() => new Set(result?.ring.nodes.map((n) => n.id) ?? []), [result]);
 
   async function runDetect() {
     if (busy) return;
@@ -59,7 +66,7 @@ export default function App() {
   function resetDemo() {
     timers.current.forEach(clearTimeout);
     timers.current = [];
-    setResult(null); setFrozen(null); setPaywall(false); setPaying(false);
+    setResult(null); setFrozen(null); setPaywall(false); setPaying(false); setSelected(null);
     setPhase('idle');
   }
 
@@ -98,9 +105,11 @@ export default function App() {
         </div>
       </header>
 
+      <TelemetryBar accounts={graph.nodes.length} valueAtRisk={valueAtRisk} ringsCaught={result ? 1 : 0} hasResult={!!result} />
+
       <div className="stage">
         <div className="canvas">
-          <Graph data={graph} ringIds={ringIds} muleId={result?.ring.mule ?? null} phase={phase} />
+          <Graph data={graph} ringIds={ringIds} muleId={result?.ring.mule ?? null} phase={phase} onNodeClick={(id) => setSelected(getNodeDetail(id))} />
           {phase === 'idle' && (
             <div className="hint">{graph.nodes.length} accounts · every transaction looks clean in isolation</div>
           )}
@@ -116,15 +125,20 @@ export default function App() {
 
         <aside className="panel">
           <section className="feed">
-            <h3>◉ Live transaction feed</h3>
-            <ul>{feed.map((l, i) => <li key={i} style={{ opacity: 1 - i * 0.12 }}>{l}</li>)}</ul>
+            <div className="feed-head">
+              <h3>◉ Live transaction feed</h3>
+              {feed.some((f) => f.ring) && <span className="ring-activity">⚠ ring activity ×{feed.filter((f) => f.ring).length}</span>}
+            </div>
+            <ul>{feed.map((f, i) => (
+              <li key={i} className={f.ring ? 'ring-tx' : ''} style={{ opacity: 1 - i * 0.1 }}>
+                <span className="feed-line">{f.line}</span><span className="feed-ts">{f.ts}</span>
+              </li>
+            ))}</ul>
           </section>
 
-          {phase !== 'complete' ? (
-            <button className="primary" disabled={busy || !graph.nodes.length} onClick={runDetect}>
-              {busy ? busyLabel : '⚡ Run ring detection'}
-            </button>
-          ) : result && (
+          {phase === 'idle' && <EmptyBriefing accounts={graph.nodes.length} onRun={runDetect} disabled={!graph.nodes.length} />}
+          {busy && <button className="primary" disabled>{busyLabel}</button>}
+          {phase === 'complete' && result && (
             <section className="briefing">
               <div className="scorewrap">
                 <RiskDial score={result.verdict.riskScore} breakdown={result.verdict.breakdown} />
@@ -178,6 +192,8 @@ export default function App() {
           </div>
         </div>
       )}
+
+      <NodeDrawer detail={selected} onClose={() => setSelected(null)} />
     </div>
   );
 }
