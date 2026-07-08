@@ -8,6 +8,8 @@ import CogneeMemory from './CogneeMemory';
 import TelemetryBar from './TelemetryBar';
 import EmptyBriefing from './EmptyBriefing';
 import NodeDrawer from './NodeDrawer';
+import CaseFooter from './CaseFooter';
+import DemoGuide from './DemoGuide';
 import { useCounter } from './useCounter';
 import {
   detect, getInitialGraph, getStatus, streamTransactions, freeze, checkout, getNodeDetail,
@@ -26,6 +28,7 @@ export default function App() {
   const [frozen, setFrozen] = useState<number | null>(null);
   const [paying, setPaying] = useState(false);
   const [selected, setSelected] = useState<NodeDetail | null>(null);
+  const [guideOpen, setGuideOpen] = useState(false);
   const timers = useRef<number[]>([]);
 
   const busy = phase === 'scanning' || phase === 'traversing' || phase === 'revealing';
@@ -52,6 +55,12 @@ export default function App() {
   }, [graph.nodes.length, nameMap, ringIds]);
 
   useEffect(() => () => timers.current.forEach(clearTimeout), []);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === 'Escape') { setSelected(null); setPaywall(false); setGuideOpen(false); } };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   async function runDetect() {
     if (busy) return;
@@ -102,6 +111,7 @@ export default function App() {
             <Chip on={status?.cognee} label="Cognee" demoLabel="Cognee" />
           </div>
           {phase !== 'idle' && <button className="reset" onClick={resetDemo}>↺ Reset</button>}
+          <button className="reset" onClick={() => setGuideOpen(true)}>? Guide</button>
         </div>
       </header>
 
@@ -161,7 +171,7 @@ export default function App() {
               {frozen == null ? (
                 <button className="danger" onClick={onFreeze}>🧊 Freeze ring &amp; export case</button>
               ) : (
-                <div className="frozen">✅ {frozen} accounts frozen · case saved to Butterbase</div>
+                <CaseFooter frozen={frozen} typology={result.verdict.typology} mule={muleName ?? result.ring.mule} />
               )}
             </section>
           )}
@@ -194,6 +204,7 @@ export default function App() {
       )}
 
       <NodeDrawer detail={selected} onClose={() => setSelected(null)} />
+      <DemoGuide open={guideOpen} onClose={() => setGuideOpen(false)} />
     </div>
   );
 }

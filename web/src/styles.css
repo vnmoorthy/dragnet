@@ -255,3 +255,36 @@ button:disabled { opacity: 0.5; cursor: default; }
 .dr-chips { display: flex; flex-wrap: wrap; gap: 6px; }
 .dr-chip { font-family: var(--mono); font-size: var(--t-xs); background: rgba(53,194,255,0.08); border: 1px solid var(--line); color: #9fd0ff; padding: 3px 8px; border-radius: 6px; }
 .dr-note { margin-top: 16px; font-size: var(--t-xs); color: var(--muted); line-height: 1.5; border-top: 1px solid var(--line); padding-top: 12px; }
+
+/* ============ Round 4 — final finish ============ */
+.case-footer { border: 1px solid #244b39; border-radius: 10px; background: linear-gradient(180deg, rgba(59,214,122,0.06), transparent); padding: 12px; animation: fade 0.4s ease; }
+.cf-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.cf-frozen { color: var(--green); font-weight: 700; font-size: var(--t-sm); }
+.cf-copy { background: rgba(255,255,255,0.04); border: 1px solid var(--line); color: var(--muted); font-size: var(--t-xs); padding: 5px 10px; border-radius: 7px; }
+.cf-copy:hover { color: #fff; border-color: var(--accent); }
+.cf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.cf-grid > div { display: flex; flex-direction: column; gap: 2px; }
+.cf-k { font-size: 9px; letter-spacing: 0.5px; text-transform: uppercase; color: var(--muted-2); }
+.cf-v { font-size: var(--t-sm); font-weight: 600; }
+.cf-v.mono { font-family: var(--mono); font-size: var(--t-xs); }
+
+.guide { position: fixed; right: 20px; bottom: 20px; z-index: 60; width: 340px; background: linear-gradient(160deg, #141d2a, #0d1420); border: 1px solid rgba(53,194,255,0.25); border-radius: 14px; padding: 16px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); animation: scaleInBounce 0.4s ease; }
+.guide-head { display: flex; justify-content: space-between; align-items: center; font-weight: 800; font-size: var(--t-sm); letter-spacing: 0.5px; margin-bottom: 12px; color: var(--accent); }
+.guide-close { background: transparent; color: var(--muted); font-size: 14px; }
+.guide-close:hover { color: #fff; }
+.guide-steps { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 11px; }
+.guide-steps li { display: flex; gap: 10px; }
+.guide-n { flex-shrink: 0; width: 20px; height: 20px; border-radius: 50%; background: rgba(53,194,255,0.12); color: var(--accent); font-size: var(--t-xs); font-weight: 800; display: flex; align-items: center; justify-content: center; }
+.guide-steps li > div { display: flex; flex-direction: column; gap: 2px; }
+.guide-steps b { font-size: var(--t-sm); }
+.guide-steps span { font-size: var(--t-xs); color: var(--muted); line-height: 1.4; }
+
+@media (min-width: 1920px) {
+  :root { --text: #f0f5fa; --muted: #8fa3ba; }
+  .brand { font-size: var(--t-xl); }
+  .typology { font-size: 34px; }
+  .dial { width: 100px; height: 100px; }
+  .dial .num { font-size: 34px; }
+  .panel { width: 420px; }
+  .stat-v { font-size: var(--t-xl); }
+}

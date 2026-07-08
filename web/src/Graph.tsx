@@ -90,7 +90,7 @@ export default function Graph({ data, ringIds, muleId, phase, onNodeClick }: Pro
         linkLineDash={(l: any) => (l.kind === 'shared' ? [5, 3] : null)}
         linkDirectionalParticles={(l: any) => (revealed && inRing(l) && l.kind === 'money' ? 4 : 0)}
         linkDirectionalParticleWidth={2.6}
-        linkDirectionalParticleColor={() => MULE}
+        linkDirectionalParticleColor={() => (Math.sin(performance.now() / 500) > 0 ? MULE : '#fff2b0')}
         nodeCanvasObject={(node: any, ctx, scale) => {
           const isMule = node.id === muleId;
           const isRing = ringIds.has(node.id);
@@ -103,7 +103,7 @@ export default function Graph({ data, ringIds, muleId, phase, onNodeClick }: Pro
           if (isMule && revealed) {
             ctx.shadowColor = MULE; ctx.shadowBlur = 26; ctx.fillStyle = MULE;
           } else if (litRing) {
-            ctx.shadowColor = RING; ctx.shadowBlur = 18; ctx.fillStyle = RING;
+            ctx.shadowColor = RING; ctx.shadowBlur = 15 + 6 * (0.5 + 0.5 * Math.sin(performance.now() / 850)); ctx.fillStyle = RING;
           } else if (traversing && isRing) {
             ctx.shadowColor = CYAN; ctx.shadowBlur = 12; ctx.fillStyle = CYAN;
           } else {
